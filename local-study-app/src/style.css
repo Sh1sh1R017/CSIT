@@ -2694,6 +2694,239 @@ body {
 }
 
 /* ==========================================================================
+   INDIVIDUAL LINK GOOGLE DRIVE PREVIEW & MANAGER
+   ========================================================================== */
+
+.pdf-view-mode-toggles {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.btn-mode-toggle {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-mode-toggle:hover {
+  color: #0f172a;
+}
+
+.btn-mode-toggle.active {
+  background: #ffffff;
+  color: #16a34a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+}
+
+.btn-manage-drive {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-manage-drive:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.btn-manage-drive.has-custom {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #16a34a;
+}
+
+/* Drive Preview Prompt Box inside Modal */
+.drive-preview-prompt-box {
+  background: #ffffff;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.dpp-icon {
+  font-size: 54px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.drive-preview-prompt-box h3 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.dpp-filename {
+  font-size: 15px;
+  color: #475569;
+  margin: 0 0 6px 0;
+}
+
+.dpp-desc {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.dpp-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.btn-dpp-search {
+  background: #16a34a;
+  color: #ffffff !important;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+  transition: all 0.15s ease;
+}
+
+.btn-dpp-search:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.btn-dpp-folder {
+  background: #f1f5f9;
+  color: #334155 !important;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-dpp-folder:hover {
+  background: #e2e8f0;
+  color: #0f172a !important;
+}
+
+.dpp-attach-card {
+  background: #f8fafc;
+  border: 1px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 100%;
+  text-align: left;
+}
+
+.dpp-attach-card h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.dpp-attach-card p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.dpp-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dpp-input-row input {
+  flex: 1;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.dpp-input-row input:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.btn-dpp-save {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-dpp-save:hover {
+  background: #1e293b;
+}
+
+.btn-edit-drive-pill {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-edit-drive-pill:hover {
+  background: #dcfce7;
+}
+
+/* ==========================================================================
    FOOTER (easyCSIT Style)
    ========================================================================== */
 

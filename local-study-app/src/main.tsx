@@ -557,10 +557,24 @@ function App() {
   const [selectedQbSubjectCode, setSelectedQbSubjectCode] = useState<string>("CSC370"); // Defaults to E-Commerce
   const [selectedQbYear, setSelectedQbYear] = useState<string>("2082-New");
 
-  // PDF Viewer Modal State
+  // PDF Viewer Modal & Individual Google Drive Preview State
   const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
   const [activePdfTitle, setActivePdfTitle] = useState<string>("");
   const [activePdfDriveUrl, setActivePdfDriveUrl] = useState<string | null>(null);
+  const [activePdfFile, setActivePdfFile] = useState<ResourceFile | null>(null);
+  const [previewMode, setPreviewMode] = useState<"drive" | "local">("drive");
+  const [driveInputUrl, setDriveInputUrl] = useState<string>("");
+  const [editingDriveLink, setEditingDriveLink] = useState<boolean>(false);
+
+  // Per-file mapped Google Drive URLs/IDs
+  const [fileDriveMap, setFileDriveMap] = useState<Record<string, string>>(() => {
+    try {
+      const stored = localStorage.getItem("freecsit_file_drive_map");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
 
   // Google Drive Cloud Storage State
   const [driveRootUrl, setDriveRootUrl] = useState<string>(() => {
@@ -572,6 +586,65 @@ function App() {
     if (entered && entered.trim()) {
       setDriveRootUrl(entered.trim());
       localStorage.setItem("freecsit_drive_url", entered.trim());
+    }
+  };
+
+  // Helper: Get targeted Google Drive link for an individual file
+  const getFileDriveUrl = (file: ResourceFile): string => {
+    if (fileDriveMap[file.name]) return fileDriveMap[file.name];
+    if (file.driveUrl) return file.driveUrl;
+    // Direct targeted Google Drive search query for this exact file
+    return `https://drive.google.com/drive/search?q=${encodeURIComponent('"' + cleanFileName(file.name) + '"')}`;
+  };
+
+  // Helper: Format Google Drive file link into an embeddable /preview URL
+  const getDirectDrivePreviewUrl = (urlOrId: string): string => {
+    if (!urlOrId) return "";
+    const trimmed = urlOrId.trim();
+    // If user pasted pure File ID (alphanumeric string without slashes or ://)
+    if (!trimmed.includes("/") && !trimmed.includes(":") && trimmed.length >= 15) {
+      return `https://drive.google.com/file/d/${trimmed}/preview`;
+    }
+    // If standard drive.google.com/file/d/ID/view format
+    const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+    // If drive.google.com/open?id=ID format
+    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+    }
+    if (trimmed.includes("drive.google.com")) {
+      return trimmed.replace(/\/view(\?.*)?$/, "/preview");
+    }
+    return trimmed;
+  };
+
+  const handleSaveFileDriveUrl = () => {
+    if (!activePdfFile) return;
+    const trimmed = driveInputUrl.trim();
+    if (!trimmed) return;
+    const newMap = { ...fileDriveMap, [activePdfFile.name]: trimmed };
+    setFileDriveMap(newMap);
+    localStorage.setItem("freecsit_file_drive_map", JSON.stringify(newMap));
+    setActivePdfDriveUrl(trimmed);
+    setEditingDriveLink(false);
+  };
+
+  const handlePromptSetFileDrive = (file: ResourceFile, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const current = fileDriveMap[file.name] || file.driveUrl || "";
+    const entered = window.prompt(`Attach Google Drive Sharing Link or File ID for:\n"${file.name}"`, current);
+    if (entered !== null) {
+      const trimmed = entered.trim();
+      const newMap = { ...fileDriveMap, [file.name]: trimmed };
+      setFileDriveMap(newMap);
+      localStorage.setItem("freecsit_file_drive_map", JSON.stringify(newMap));
+      if (activePdfFile?.name === file.name) {
+        setDriveInputUrl(trimmed);
+        setActivePdfDriveUrl(trimmed);
+      }
     }
   };
 
@@ -623,15 +696,23 @@ function App() {
   };
 
   const openPdfViewer = (file: ResourceFile) => {
+    setActivePdfFile(file);
     setActivePdfUrl(file.webPath);
     setActivePdfTitle(cleanFileName(file.name));
-    setActivePdfDriveUrl(file.driveUrl || (activeSubject?.driveFolderUrl || driveRootUrl));
+    const specificDrive = fileDriveMap[file.name] || file.driveUrl;
+    setActivePdfDriveUrl(specificDrive || getFileDriveUrl(file));
+    setDriveInputUrl(specificDrive || "");
+    setEditingDriveLink(false);
+    setPreviewMode("drive");
   };
 
   const closePdfViewer = () => {
+    setActivePdfFile(null);
     setActivePdfUrl(null);
     setActivePdfTitle("");
     setActivePdfDriveUrl(null);
+    setDriveInputUrl("");
+    setEditingDriveLink(false);
   };
 
   // Filtered subjects
@@ -734,9 +815,39 @@ function App() {
               <div className="pdf-title-box">
                 <span className="pdf-badge">PDF DOCUMENT</span>
                 <h3>{activePdfTitle}</h3>
+                <div className="pdf-view-mode-toggles">
+                  <button
+                    className={`btn-mode-toggle ${previewMode === "drive" ? "active" : ""}`}
+                    onClick={() => { setPreviewMode("drive"); setEditingDriveLink(false); }}
+                  >
+                    ☁️ Google Drive Preview
+                  </button>
+                  <button
+                    className={`btn-mode-toggle ${previewMode === "local" ? "active" : ""}`}
+                    onClick={() => setPreviewMode("local")}
+                  >
+                    📄 In-Browser Viewer
+                  </button>
+                </div>
               </div>
               <div className="pdf-modal-actions">
-                <a className="btn-download" style={{ background: "#16a34a", color: "#ffffff", borderColor: "#15803d" }} href={activePdfDriveUrl || driveRootUrl} target="_blank" rel="noreferrer" title="Open or download in Google Drive">
+                {activePdfFile && (
+                  <button
+                    className="btn-edit-drive-pill"
+                    onClick={() => setEditingDriveLink(prev => !prev)}
+                    title="Manage Google Drive Link or File ID for this document"
+                  >
+                    ⚙️ Manage Drive Link
+                  </button>
+                )}
+                <a
+                  className="btn-download"
+                  style={{ background: "#16a34a", color: "#ffffff", borderColor: "#15803d" }}
+                  href={activePdfFile ? getFileDriveUrl(activePdfFile) : (activePdfDriveUrl || driveRootUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Search or open in Google Drive"
+                >
                   ☁️ Open in Drive
                 </a>
                 <a className="btn-download" href={activePdfUrl} download target="_blank" rel="noreferrer">
@@ -749,16 +860,100 @@ function App() {
               </div>
             </div>
             <div className="pdf-modal-body">
-              <iframe
-                src={
-                  activePdfUrl.includes("drive.google.com")
-                    ? activePdfUrl.replace(/\/view(\?.*)?$/, "/preview")
-                    : activePdfUrl
-                }
-                title={activePdfTitle}
-                width="100%"
-                height="100%"
-              />
+              {previewMode === "drive" ? (
+                (() => {
+                  const mappedUrl = activePdfFile ? fileDriveMap[activePdfFile.name] || activePdfFile.driveUrl : null;
+                  const hasDirectLink = !!mappedUrl && !editingDriveLink;
+
+                  if (hasDirectLink) {
+                    return (
+                      <iframe
+                        src={getDirectDrivePreviewUrl(mappedUrl)}
+                        title={activePdfTitle}
+                        width="100%"
+                        height="100%"
+                        allow="autoplay"
+                      />
+                    );
+                  }
+
+                  const searchDriveUrl = activePdfFile
+                    ? `https://drive.google.com/drive/search?q=${encodeURIComponent('"' + cleanFileName(activePdfFile.name) + '"')}`
+                    : driveRootUrl;
+
+                  return (
+                    <div className="drive-preview-prompt-box">
+                      <div className="dpp-icon">☁️</div>
+                      <h3>Individual Google Drive Preview</h3>
+                      <p className="dpp-filename">
+                        <strong>File:</strong> {activePdfTitle}
+                      </p>
+                      <p className="dpp-desc">
+                        {editingDriveLink
+                          ? "Paste the Google Drive sharing URL or File ID below to permanently bind direct in-modal preview for this file."
+                          : "This file is hosted in our Google Drive repository. You can launch a targeted search to locate it instantly, or attach a direct Drive preview link below."}
+                      </p>
+
+                      <div className="dpp-actions">
+                        <a
+                          className="btn-dpp-search"
+                          href={searchDriveUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          🔍 Search & Open in Google Drive ↗
+                        </a>
+                        <a
+                          className="btn-dpp-folder"
+                          href={driveRootUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          📂 Open 6th Sem Root Folder
+                        </a>
+                        <button
+                          className="btn-dpp-folder"
+                          onClick={() => setPreviewMode("local")}
+                        >
+                          📄 Switch to In-Browser Viewer
+                        </button>
+                      </div>
+
+                      <div className="dpp-attach-card">
+                        <h4>⚙️ Attach Direct Drive File Link / ID</h4>
+                        <p>
+                          Paste the Google Drive sharing URL (e.g. <code>https://drive.google.com/file/d/.../view</code>) or the File ID to embed the live preview directly here.
+                        </p>
+                        <div className="dpp-input-row">
+                          <input
+                            type="text"
+                            placeholder="https://drive.google.com/file/d/... or File ID"
+                            value={driveInputUrl}
+                            onChange={(e) => setDriveInputUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveFileDriveUrl();
+                            }}
+                          />
+                          <button className="btn-dpp-save" onClick={handleSaveFileDriveUrl}>
+                            Save & Preview
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <iframe
+                  src={
+                    activePdfUrl.includes("drive.google.com")
+                      ? activePdfUrl.replace(/\/view(\?.*)?$/, "/preview")
+                      : activePdfUrl
+                  }
+                  title={activePdfTitle}
+                  width="100%"
+                  height="100%"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -1364,13 +1559,20 @@ function App() {
                           </button>
                           <a
                             className="btn-drive-file"
-                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            href={getFileDriveUrl(file)}
                             target="_blank"
                             rel="noreferrer"
                             title="Open on Google Drive"
                           >
                             ☁️ Drive
                           </a>
+                          <button
+                            className={`btn-manage-drive ${fileDriveMap[file.name] ? "has-custom" : ""}`}
+                            onClick={(e) => handlePromptSetFileDrive(file, e)}
+                            title={fileDriveMap[file.name] ? "Google Drive link attached (click to edit)" : "Attach Google Drive link"}
+                          >
+                            ⚙️
+                          </button>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer" title="Download">
                             ⬇
                           </a>
@@ -1428,13 +1630,20 @@ function App() {
                           )}
                           <a
                             className="btn-drive-file"
-                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            href={getFileDriveUrl(file)}
                             target="_blank"
                             rel="noreferrer"
                             title="Open on Google Drive"
                           >
                             ☁️ Drive
                           </a>
+                          <button
+                            className={`btn-manage-drive ${fileDriveMap[file.name] ? "has-custom" : ""}`}
+                            onClick={(e) => handlePromptSetFileDrive(file, e)}
+                            title={fileDriveMap[file.name] ? "Google Drive link attached (click to edit)" : "Attach Google Drive link"}
+                          >
+                            ⚙️
+                          </button>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer">
                             ⬇
                           </a>
@@ -1578,13 +1787,20 @@ function App() {
                           )}
                           <a
                             className="btn-drive-file"
-                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            href={getFileDriveUrl(file)}
                             target="_blank"
                             rel="noreferrer"
                             title="Open on Google Drive"
                           >
                             ☁️ Drive
                           </a>
+                          <button
+                            className={`btn-manage-drive ${fileDriveMap[file.name] ? "has-custom" : ""}`}
+                            onClick={(e) => handlePromptSetFileDrive(file, e)}
+                            title={fileDriveMap[file.name] ? "Google Drive link attached (click to edit)" : "Attach Google Drive link"}
+                          >
+                            ⚙️
+                          </button>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer">
                             ⬇
                           </a>
@@ -1636,13 +1852,20 @@ function App() {
                           </button>
                           <a
                             className="btn-drive-file"
-                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            href={getFileDriveUrl(file)}
                             target="_blank"
                             rel="noreferrer"
                             title="Open on Google Drive"
                           >
                             ☁️ Drive
                           </a>
+                          <button
+                            className={`btn-manage-drive ${fileDriveMap[file.name] ? "has-custom" : ""}`}
+                            onClick={(e) => handlePromptSetFileDrive(file, e)}
+                            title={fileDriveMap[file.name] ? "Google Drive link attached (click to edit)" : "Attach Google Drive link"}
+                          >
+                            ⚙️
+                          </button>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer">
                             ⬇
                           </a>
@@ -1838,6 +2061,22 @@ function App() {
                             ) : (
                               <a className="btn-view-pdf" href={f.webPath} target="_blank" rel="noreferrer">Open ↗</a>
                             )}
+                            <a
+                              className="btn-drive-file"
+                              href={getFileDriveUrl(f)}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Open on Google Drive"
+                            >
+                              ☁️ Drive
+                            </a>
+                            <button
+                              className={`btn-manage-drive ${fileDriveMap[f.name] ? "has-custom" : ""}`}
+                              onClick={(e) => handlePromptSetFileDrive(f, e)}
+                              title={fileDriveMap[f.name] ? "Google Drive link attached (click to edit)" : "Attach Google Drive link"}
+                            >
+                              ⚙️
+                            </button>
                           </div>
                         </div>
                       ))}
