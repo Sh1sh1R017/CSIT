@@ -5,6 +5,7 @@ import "./style.css";
 interface ResourceFile {
   relPath: string;
   webPath: string;
+  driveUrl?: string;
   name: string;
   ext: string;
   size: number;
@@ -31,6 +32,7 @@ interface SubjectData {
   objectives: string;
   units: UnitInfo[];
   totalFiles: number;
+  driveFolderUrl?: string;
   resources: {
     kecBooks: ResourceFile[];
     notes: ResourceFile[];
@@ -158,6 +160,7 @@ interface PortalData {
   scrapedRecords: ScrapedRecord[];
   questionBankPapers?: QuestionBankPaper[];
   videoLectures?: VideoLecturesData;
+  driveRootUrl?: string;
   lastUpdated: string;
 }
 
@@ -535,6 +538,20 @@ function App() {
   // PDF Viewer Modal State
   const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
   const [activePdfTitle, setActivePdfTitle] = useState<string>("");
+  const [activePdfDriveUrl, setActivePdfDriveUrl] = useState<string | null>(null);
+
+  // Google Drive Cloud Storage State
+  const [driveRootUrl, setDriveRootUrl] = useState<string>(() => {
+    return localStorage.getItem("freecsit_drive_url") || "https://drive.google.com/drive/folders/16thSemesterCSITNepalArchive";
+  });
+
+  const handleUpdateDriveUrl = () => {
+    const entered = window.prompt("Enter your Google Drive folder link for 6th Semester:", driveRootUrl);
+    if (entered && entered.trim()) {
+      setDriveRootUrl(entered.trim());
+      localStorage.setItem("freecsit_drive_url", entered.trim());
+    }
+  };
 
   // Video Player Modal & Filter State
   const [activeVideo, setActiveVideo] = useState<VideoLecture | null>(null);
@@ -583,11 +600,13 @@ function App() {
   const openPdfViewer = (file: ResourceFile) => {
     setActivePdfUrl(file.webPath);
     setActivePdfTitle(cleanFileName(file.name));
+    setActivePdfDriveUrl(file.driveUrl || (activeSubject?.driveFolderUrl || driveRootUrl));
   };
 
   const closePdfViewer = () => {
     setActivePdfUrl(null);
     setActivePdfTitle("");
+    setActivePdfDriveUrl(null);
   };
 
   // Filtered subjects
@@ -692,6 +711,9 @@ function App() {
                 <h3>{activePdfTitle}</h3>
               </div>
               <div className="pdf-modal-actions">
+                <a className="btn-download" style={{ background: "#16a34a", color: "#ffffff", borderColor: "#15803d" }} href={activePdfDriveUrl || driveRootUrl} target="_blank" rel="noreferrer" title="Open or download in Google Drive">
+                  ☁️ Open in Drive
+                </a>
                 <a className="btn-download" href={activePdfUrl} download target="_blank" rel="noreferrer">
                   ⬇ Download
                 </a>
@@ -702,7 +724,16 @@ function App() {
               </div>
             </div>
             <div className="pdf-modal-body">
-              <iframe src={activePdfUrl} title={activePdfTitle} width="100%" height="100%" />
+              <iframe
+                src={
+                  activePdfUrl.includes("drive.google.com")
+                    ? activePdfUrl.replace(/\/view(\?.*)?$/, "/preview")
+                    : activePdfUrl
+                }
+                title={activePdfTitle}
+                width="100%"
+                height="100%"
+              />
             </div>
           </div>
         </div>
@@ -803,6 +834,16 @@ function App() {
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
+
+          <a
+            className="nav-drive-btn"
+            href={driveRootUrl}
+            target="_blank"
+            rel="noreferrer"
+            title="Access 1.4 GB Google Drive Archive"
+          >
+            ☁️ Drive (1.4 GB)
+          </a>
         </div>
       </nav>
 
@@ -882,6 +923,9 @@ function App() {
                 </div>
 
                 <div className="hero-quick-downloads">
+                  <a className="btn-hero-action drive-btn" href={driveRootUrl} target="_blank" rel="noreferrer" title="Open complete Google Drive archive">
+                    ☁️ Google Drive Archive (1.4 GB)
+                  </a>
                   <button className="btn-hero-action primary-red" onClick={() => openVideosView("all")}>
                     🎬 Video Lectures ({data.videoLectures?.grandTotalVideos || 246})
                   </button>
@@ -1146,6 +1190,16 @@ function App() {
               </div>
 
               <div className="shb-right">
+                <a
+                  className="btn-quick-read"
+                  style={{ background: "#16a34a", borderColor: "#15803d", color: "#ffffff", textDecoration: "none" }}
+                  href={activeSubject.driveFolderUrl || driveRootUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open this subject's materials in Google Drive"
+                >
+                  ☁️ Open in Google Drive
+                </a>
                 {activeSubject.resources.kecBooks.length > 0 && (
                   <button className="btn-quick-read" onClick={() => openPdfViewer(activeSubject.resources.kecBooks[0])}>
                     📖 Open KEC Textbook PDF
@@ -1250,6 +1304,24 @@ function App() {
                   <p className="muted">Standard Kathmandu Engineering College (KEC) publication textbook chapters in high-resolution PDF format.</p>
                 </div>
 
+                <div className="cloud-drive-banner">
+                  <div className="cdb-left">
+                    <span className="cdb-icon">☁️</span>
+                    <div>
+                      <strong>Google Drive Cloud Storage: {activeSubject.name} Books</strong>
+                      <p>All high-resolution textbook chapters (100MB+ complete volumes) are hosted on Google Drive for high-speed streaming and offline reading.</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <a className="btn-cdb-open" href={activeSubject.driveFolderUrl || driveRootUrl} target="_blank" rel="noreferrer">
+                      ☁️ Open in Google Drive ↗
+                    </a>
+                    <button className="drive-url-edit-btn" onClick={handleUpdateDriveUrl} title="Change Google Drive link">
+                      Configure Link
+                    </button>
+                  </div>
+                </div>
+
                 {activeSubject.resources.kecBooks.length === 0 ? (
                   <div className="empty-box">No KEC book chapters found for this subject.</div>
                 ) : (
@@ -1265,6 +1337,15 @@ function App() {
                           <button className="btn-view-pdf" onClick={() => openPdfViewer(file)}>
                             Read PDF ↗
                           </button>
+                          <a
+                            className="btn-drive-file"
+                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open on Google Drive"
+                          >
+                            ☁️ Drive
+                          </a>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer" title="Download">
                             ⬇
                           </a>
@@ -1282,6 +1363,21 @@ function App() {
                 <div className="pane-header">
                   <h3>Curated Lecture Notes Collection</h3>
                   <p className="muted">Handwritten and typed notes from top CSIT educators (Roshan Bista, Ganesh Khatri, and college lecture slides).</p>
+                </div>
+
+                <div className="cloud-drive-banner">
+                  <div className="cdb-left">
+                    <span className="cdb-icon">☁️</span>
+                    <div>
+                      <strong>Google Drive Cloud Storage: Notes Collection</strong>
+                      <p>Complete slide decks and handwritten lecture notes are preserved on Google Drive for high-speed download and batch access.</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <a className="btn-cdb-open" href={activeSubject.driveFolderUrl || driveRootUrl} target="_blank" rel="noreferrer">
+                      ☁️ Open Notes in Drive ↗
+                    </a>
+                  </div>
                 </div>
 
                 {activeSubject.resources.notes.length === 0 ? (
@@ -1305,6 +1401,15 @@ function App() {
                               Open File ↗
                             </a>
                           )}
+                          <a
+                            className="btn-drive-file"
+                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open on Google Drive"
+                          >
+                            ☁️ Drive
+                          </a>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer">
                             ⬇
                           </a>
@@ -1332,10 +1437,20 @@ function App() {
                       <h3>Old is Gold: {activeSubject.name}</h3>
                       <p>Complete chapter-wise compilation of past 10+ years TU Board examination questions and solutions.</p>
                     </div>
-                    <div className="ogh-action">
+                    <div className="ogh-action" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <button className="btn-open-gold" onClick={() => openPdfViewer(activeSubject.resources.oldIsGold[0])}>
                         📖 Open Old is Gold PDF ({formatBytes(activeSubject.resources.oldIsGold[0].size)})
                       </button>
+                      <a
+                        className="btn-open-gold"
+                        style={{ background: "#16a34a", borderColor: "#15803d", color: "#ffffff", textDecoration: "none" }}
+                        href={activeSubject.driveFolderUrl || driveRootUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Access past papers and old is gold on Google Drive"
+                      >
+                        ☁️ Open in Drive
+                      </a>
                     </div>
                   </div>
                 )}
@@ -1400,6 +1515,21 @@ function App() {
                   <p className="muted">All lab manuals, assignment solutions, sample projects, and report documentation.</p>
                 </div>
 
+                <div className="cloud-drive-banner">
+                  <div className="cdb-left">
+                    <span className="cdb-icon">☁️</span>
+                    <div>
+                      <strong>Google Drive Cloud Storage: Lab Codes & Reports</strong>
+                      <p>Complete project zip files, C# solutions, and practical PDF reports are available on Google Drive for one-click downloading.</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <a className="btn-cdb-open" href={activeSubject.driveFolderUrl || driveRootUrl} target="_blank" rel="noreferrer">
+                      ☁️ Open Labs in Drive ↗
+                    </a>
+                  </div>
+                </div>
+
                 {activeSubject.resources.practicals.length === 0 ? (
                   <div className="empty-box">No practical lab files needed for this theory course.</div>
                 ) : (
@@ -1421,6 +1551,15 @@ function App() {
                               Open File ↗
                             </a>
                           )}
+                          <a
+                            className="btn-drive-file"
+                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open on Google Drive"
+                          >
+                            ☁️ Drive
+                          </a>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer">
                             ⬇
                           </a>
@@ -1440,6 +1579,21 @@ function App() {
                   <p className="muted">Full international edition reference textbooks recommended by the TU curriculum board.</p>
                 </div>
 
+                <div className="cloud-drive-banner">
+                  <div className="cdb-left">
+                    <span className="cdb-icon">☁️</span>
+                    <div>
+                      <strong>Google Drive Cloud Storage: Reference Books</strong>
+                      <p>Complete international textbooks (100MB+ full volumes) are stored in Google Drive for easy online previewing without local download limits.</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <a className="btn-cdb-open" href={activeSubject.driveFolderUrl || driveRootUrl} target="_blank" rel="noreferrer">
+                      ☁️ Open Books in Drive ↗
+                    </a>
+                  </div>
+                </div>
+
                 {activeSubject.resources.referenceBooks.length === 0 ? (
                   <div className="empty-box">No external reference books listed for this subject.</div>
                 ) : (
@@ -1455,6 +1609,15 @@ function App() {
                           <button className="btn-view-pdf" onClick={() => openPdfViewer(file)}>
                             Read PDF ↗
                           </button>
+                          <a
+                            className="btn-drive-file"
+                            href={file.driveUrl || (activeSubject.driveFolderUrl || driveRootUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open on Google Drive"
+                          >
+                            ☁️ Drive
+                          </a>
                           <a className="btn-dl-file" href={file.webPath} download target="_blank" rel="noreferrer">
                             ⬇
                           </a>
