@@ -200,6 +200,7 @@ function QuestionPaperViewer({
   showSubjectSelector?: boolean;
 }) {
   const [expandedQId, setExpandedQId] = useState<string | null>(null);
+  const [fontSize, setFontSize] = useState<"normal" | "large" | "xlarge">("large");
 
   // Subject's papers filtered by code
   const subjectPapers = useMemo(() => {
@@ -285,6 +286,27 @@ function QuestionPaperViewer({
               <h2>{currentPaper.subjectName} ({currentPaper.subjectCode})</h2>
             </div>
             <div className="qb-toolbar-actions">
+              <div className="qb-fs-group" title="Adjust text size for easy reading">
+                <span className="qb-fs-label">Text:</span>
+                <button
+                  className={`btn-fs-toggle ${fontSize === "normal" ? "active" : ""}`}
+                  onClick={() => setFontSize("normal")}
+                >
+                  Standard
+                </button>
+                <button
+                  className={`btn-fs-toggle ${fontSize === "large" ? "active" : ""}`}
+                  onClick={() => setFontSize("large")}
+                >
+                  Large
+                </button>
+                <button
+                  className={`btn-fs-toggle ${fontSize === "xlarge" ? "active" : ""}`}
+                  onClick={() => setFontSize("xlarge")}
+                >
+                  A+
+                </button>
+              </div>
               <button className="btn-qb-print" onClick={() => window.print()} title="Print or Save as PDF">
                 🖨️ Print Paper
               </button>
@@ -305,7 +327,7 @@ function QuestionPaperViewer({
           </div>
 
           {/* AUTHENTIC TU BOARD EXAM PAPER SHEET */}
-          <div className="tu-exam-paper-sheet question_bank_container">
+          <div className={`tu-exam-paper-sheet question_bank_container reader-size-${fontSize}`}>
             {/* UNIVERSITY HEADER */}
             <div className="tu-paper-header syllabus_header">
               <div className="univ-title">{currentPaper.university}</div>
