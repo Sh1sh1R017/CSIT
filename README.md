@@ -16,6 +16,12 @@ A comprehensive, offline-capable study portal for Tribhuvan University B.Sc. CSI
 - **KEC & Reference Textbooks**: Kathmandu Engineering College and TU curriculum reference textbooks.
 - **Lab Manuals & Practical Code**: Complete C# code, Lex/Yacc parsers, case studies, and lab reports.
 - **Official TU Micro-Syllabus**: Credit hours, lecture breakdowns, and course objectives.
+- **☁️ Google Drive Cloud Archive**: Direct cloud access to 1.4 GB of high-resolution KEC books, reference textbooks, lecture slides, and project files.
+
+## ☁️ Google Drive Cloud Library (1.4 GB)
+
+All heavy textbooks, lecture notes, and lab manuals are accessible via Google Drive:
+👉 **[Open 6th Semester Google Drive Cloud Archive](https://drive.google.com/drive/folders/1zdvmVr-IcpIf48yrCKAXJ0VqDhRNwOOM)**
 
 ## 🚀 Quick Start
 

@@ -542,7 +542,7 @@ function App() {
 
   // Google Drive Cloud Storage State
   const [driveRootUrl, setDriveRootUrl] = useState<string>(() => {
-    return localStorage.getItem("freecsit_drive_url") || "https://drive.google.com/drive/folders/16thSemesterCSITNepalArchive";
+    return localStorage.getItem("freecsit_drive_url") || "https://drive.google.com/drive/folders/1zdvmVr-IcpIf48yrCKAXJ0VqDhRNwOOM";
   });
 
   const handleUpdateDriveUrl = () => {
@@ -567,6 +567,9 @@ function App() {
       .then(res => res.json())
       .then((d: PortalData) => {
         setData(d);
+        if (d.driveRootUrl && !localStorage.getItem("freecsit_drive_url")) {
+          setDriveRootUrl(d.driveRootUrl);
+        }
         setLoading(false);
       })
       .catch(err => {
