@@ -10,6 +10,8 @@
     "scrape:qbanks": "node scrape_all_question_banks.mjs",
     "scrape:answers": "node scrape_answers_authenticated.mjs",
     "app:dev": "npm run dev --workspace local-study-app",
+    "app:build": "npm run build --workspace local-study-app",
+    "build": "npm run app:build",
     "test": "tsx --test test/**/*.test.ts"
   },
   "dependencies": {

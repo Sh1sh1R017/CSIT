@@ -658,8 +658,12 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    fetch("/data/portalData.json")
-      .then(res => res.json())
+    const dataUrl = `${import.meta.env.BASE_URL || "./"}data/portalData.json`;
+    fetch(dataUrl)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
       .then((d: PortalData) => {
         setData(d);
         if (d.driveRootUrl && !localStorage.getItem("freecsit_drive_url")) {
