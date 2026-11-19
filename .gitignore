@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.local/
+.env
+.env.*
+!.env.example
+data/exports/*
+!data/exports/.gitkeep
+data/index/*
+!data/index/.gitkeep
+local-study-app/dist/
+local-study-app/public/resources/
+playwright-report/
+test-results/
+*.log

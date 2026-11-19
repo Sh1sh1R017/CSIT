@@ -1,0 +1,27 @@
+{
+  "name": "freecsit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "login": "tsx src/cli.ts login",
+    "crawl": "tsx src/cli.ts crawl",
+    "build:index": "tsx src/cli.ts build-index",
+    "scrape:qbanks": "node scrape_all_question_banks.mjs",
+    "scrape:answers": "node scrape_answers_authenticated.mjs",
+    "app:dev": "npm run dev --workspace local-study-app",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  },
+  "workspaces": [
+    "local-study-app"
+  ]
+}
